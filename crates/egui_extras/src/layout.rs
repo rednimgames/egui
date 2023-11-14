@@ -96,19 +96,30 @@ impl<'l> StripLayout<'l> {
         &mut self,
         clip: bool,
         striped: bool,
+        hovered: bool,
+        selected: bool,
         width: CellSize,
         height: CellSize,
+        sense: Sense,
         add_cell_contents: impl FnOnce(&mut Ui),
     ) -> (Rect, Response) {
         let max_rect = self.cell_rect(&width, &height);
 
-        if striped {
+        if striped || hovered || selected {
             // Make sure we don't have a gap in the stripe background:
             let stripe_rect = max_rect.expand2(0.5 * self.ui.spacing().item_spacing);
 
-            self.ui
-                .painter()
-                .rect_filled(stripe_rect, 0.0, self.ui.visuals().faint_bg_color);
+            self.ui.painter().rect_filled(
+                stripe_rect,
+                0.0,
+                if selected {
+                    self.ui.visuals().selection.bg_fill
+                } else if hovered {
+                    self.ui.visuals().extreme_bg_color
+                } else {
+                    self.ui.visuals().faint_bg_color
+                },
+            );
         }
 
         let used_rect = self.cell(clip, max_rect, add_cell_contents);
@@ -121,7 +132,7 @@ impl<'l> StripLayout<'l> {
             max_rect.union(used_rect)
         };
 
-        let response = self.ui.allocate_rect(allocation_rect, Sense::hover());
+        let response = self.ui.allocate_rect(allocation_rect, sense);
 
         (used_rect, response)
     }
